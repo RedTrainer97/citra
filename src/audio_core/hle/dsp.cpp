@@ -10,6 +10,7 @@
 #include "audio_core/hle/source.h"
 #include "audio_core/sink.h"
 #include "audio_core/time_stretch.h"
+#include "core/settings.h"
 
 namespace DSP {
 namespace HLE {
@@ -89,6 +90,17 @@ static bool perform_time_stretching = true;
 static std::unique_ptr<AudioCore::Sink> sink;
 static AudioCore::TimeStretcher time_stretcher;
 
+static StereoFrame16 ChangeVolume(const StereoFrame16& frame) {
+    StereoFrame16 new_frame = StereoFrame16();
+    if (!Settings::values.mute) {
+        for (int i = 0; i < frame.size(); i++) {
+            new_frame[i][0] = frame[i][0] * Settings::values.volume;
+            new_frame[i][1] = frame[i][1] * Settings::values.volume;
+        }
+    }
+    return new_frame;
+}
+
 static void FlushResidualStretcherAudio() {
     time_stretcher.Flush();
     while (true) {
@@ -100,8 +112,9 @@ static void FlushResidualStretcherAudio() {
 }
 
 static void OutputCurrentFrame(const StereoFrame16& frame) {
+    StereoFrame16 new_frame = ChangeVolume(frame);
     if (perform_time_stretching) {
-        time_stretcher.AddSamples(&frame[0][0], frame.size());
+        time_stretcher.AddSamples(&new_frame[0][0], frame.size());
         std::vector<s16> stretched_samples = time_stretcher.Process(sink->SamplesInQueue());
         sink->EnqueueSamples(stretched_samples.data(), stretched_samples.size() / 2);
     } else {
@@ -112,7 +125,7 @@ static void OutputCurrentFrame(const StereoFrame16& frame) {
             return;
         }
 
-        sink->EnqueueSamples(&frame[0][0], frame.size());
+        sink->EnqueueSamples(&new_frame[0][0], frame.size());
     }
 }
 

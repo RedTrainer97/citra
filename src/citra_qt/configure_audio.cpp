@@ -51,6 +51,8 @@ void ConfigureAudio::setConfiguration() {
         }
     }
     ui->audio_device_combo_box->setCurrentIndex(new_device_index);
+    ui->volume_slider->setValue(Settings::values.volume * ui->volume_slider->maximum());
+    ui->mute_check_box->setChecked(Settings::values.mute);
 }
 
 void ConfigureAudio::applyConfiguration() {
@@ -61,6 +63,9 @@ void ConfigureAudio::applyConfiguration() {
     Settings::values.audio_device_id =
         ui->audio_device_combo_box->itemText(ui->audio_device_combo_box->currentIndex())
             .toStdString();
+    Settings::values.volume = (float)ui->volume_slider->value() / ui->volume_slider->maximum();
+    Settings::values.mute = ui->mute_check_box->isChecked();
+
     Settings::Apply();
 }
 
