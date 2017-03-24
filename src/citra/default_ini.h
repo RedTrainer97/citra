@@ -108,6 +108,10 @@ enable_audio_stretching =
 # auto (default): Auto-select
 output_device =
 
+# Output volume.
+# 1.0 (default): 100%, 0.0; mute
+volume =
+
 [Data Storage]
 # Whether to create a virtual SD card.
 # 1 (default): Yes, 0: No
