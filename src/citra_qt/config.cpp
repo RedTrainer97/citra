@@ -168,6 +168,7 @@ void Config::ReadValues() {
     qt_config->endGroup();
 
     UISettings::values.single_window_mode = qt_config->value("singleWindowMode", true).toBool();
+    UISettings::values.show_3DS_controls = qt_config->value("show3dsControls", true).toBool();
     UISettings::values.display_titlebar = qt_config->value("displayTitleBars", true).toBool();
     UISettings::values.show_status_bar = qt_config->value("showStatusBar", true).toBool();
     UISettings::values.confirm_before_closing = qt_config->value("confirmClose", true).toBool();
@@ -278,6 +279,7 @@ void Config::SaveValues() {
     qt_config->endGroup();
 
     qt_config->setValue("singleWindowMode", UISettings::values.single_window_mode);
+    qt_config->setValue("show3dsControls", UISettings::values.single_window_mode);
     qt_config->setValue("displayTitleBars", UISettings::values.display_titlebar);
     qt_config->setValue("showStatusBar", UISettings::values.show_status_bar);
     qt_config->setValue("confirmClose", UISettings::values.confirm_before_closing);

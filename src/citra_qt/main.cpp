@@ -69,6 +69,8 @@ GMainWindow::GMainWindow() : config(new Config()), emu_thread(nullptr) {
     ConnectMenuEvents();
     ConnectWidgetEvents();
 
+    ui.centralwidget->setStyleSheet("background-color: white;");
+
     setWindowTitle(QString("Citra %1| %2-%3")
                        .arg(Common::g_build_name, Common::g_scm_branch, Common::g_scm_desc));
     show();
@@ -79,6 +81,10 @@ GMainWindow::GMainWindow() : config(new Config()), emu_thread(nullptr) {
     if (args.length() >= 2) {
         BootGame(args[1]);
     }
+
+    volume_slider = ui.centralwidget->findChild<QSlider*>("volume_slider");
+    volume_slider->setValue(Settings::values.volume * volume_slider->maximum());
+    connect(volume_slider, SIGNAL(valueChanged(int)), this, SLOT(UpdateVolume()));
 }
 
 GMainWindow::~GMainWindow() {
@@ -92,6 +98,15 @@ GMainWindow::~GMainWindow() {
 void GMainWindow::InitializeWidgets() {
     render_window = new GRenderWindow(this, emu_thread.get());
     render_window->hide();
+
+    left_widget = ui.centralwidget->findChild<QWidget*>("left_widget");
+    left_widget->hide();
+
+    central_widget = ui.centralwidget->findChild<QWidget*>("central_widget");
+    central_widget->hide();
+
+    right_widget = ui.centralwidget->findChild<QWidget*>("right_widget");
+    right_widget->hide();
 
     game_list = new GameList();
     ui.horizontalLayout->addWidget(game_list);
@@ -243,6 +258,8 @@ void GMainWindow::RestoreUIState() {
     ui.action_Single_Window_Mode->setChecked(UISettings::values.single_window_mode);
     ToggleWindowMode();
 
+    ui.action_Show_3DS_Controls->setChecked(UISettings::values.show_3DS_controls);
+
     ui.action_Display_Dock_Widget_Headers->setChecked(UISettings::values.display_titlebar);
     OnDisplayTitleBars(ui.action_Display_Dock_Widget_Headers->isChecked());
 
@@ -280,6 +297,8 @@ void GMainWindow::ConnectMenuEvents() {
     // View
     connect(ui.action_Single_Window_Mode, &QAction::triggered, this,
             &GMainWindow::ToggleWindowMode);
+    connect(ui.action_Show_3DS_Controls, &QAction::triggered, this,
+            &GMainWindow::Toggle3dsControls);
     connect(ui.action_Display_Dock_Widget_Headers, &QAction::triggered, this,
             &GMainWindow::OnDisplayTitleBars);
     connect(ui.action_Show_Status_Bar, &QAction::triggered, statusBar(), &QStatusBar::setVisible);
@@ -412,6 +431,11 @@ void GMainWindow::BootGame(const QString& filename) {
 
     render_window->show();
     render_window->setFocus();
+    central_widget->show();
+    if (ui.action_Show_3DS_Controls->isChecked()) {
+        left_widget->show();
+        right_widget->show();
+    }
 
     emulation_running = true;
     OnStartGame();
@@ -442,6 +466,9 @@ void GMainWindow::ShutdownGame() {
     ui.action_Pause->setEnabled(false);
     ui.action_Stop->setEnabled(false);
     render_window->hide();
+    left_widget->hide();
+    central_widget->hide();
+    right_widget->hide();
     game_list->show();
 
     // Disable status bar updates
@@ -586,7 +613,7 @@ void GMainWindow::ToggleWindowMode() {
     if (ui.action_Single_Window_Mode->isChecked()) {
         // Render in the main window...
         render_window->BackupGeometry();
-        ui.horizontalLayout->addWidget(render_window);
+        ui.centralwidget->findChild<QWidget*>("central_widget")->layout()->addWidget(render_window);
         render_window->setFocusPolicy(Qt::ClickFocus);
         if (emulation_running) {
             render_window->setVisible(true);
@@ -596,7 +623,9 @@ void GMainWindow::ToggleWindowMode() {
 
     } else {
         // Render in a separate window...
-        ui.horizontalLayout->removeWidget(render_window);
+        ui.centralwidget->findChild<QWidget*>("central_widget")
+            ->layout()
+            ->removeWidget(render_window);
         render_window->setParent(nullptr);
         render_window->setFocusPolicy(Qt::NoFocus);
         if (emulation_running) {
@@ -604,6 +633,18 @@ void GMainWindow::ToggleWindowMode() {
             render_window->RestoreGeometry();
             game_list->show();
         }
+    }
+}
+
+void GMainWindow::Toggle3dsControls() {
+    if (ui.action_Show_3DS_Controls->isChecked()) {
+        if (emulation_running) {
+            left_widget->show();
+            right_widget->show();
+        }
+    } else {
+        left_widget->hide();
+        right_widget->hide();
     }
 }
 
@@ -669,6 +710,7 @@ void GMainWindow::closeEvent(QCloseEvent* event) {
     UISettings::values.microprofile_visible = microProfileDialog->isVisible();
 #endif
     UISettings::values.single_window_mode = ui.action_Single_Window_Mode->isChecked();
+    UISettings::values.show_3DS_controls = ui.action_Show_3DS_Controls->isChecked();
     UISettings::values.display_titlebar = ui.action_Display_Dock_Widget_Headers->isChecked();
     UISettings::values.show_status_bar = ui.action_Show_Status_Bar->isChecked();
     UISettings::values.first_start = false;
@@ -681,6 +723,8 @@ void GMainWindow::closeEvent(QCloseEvent* event) {
         ShutdownGame();
 
     render_window->close();
+    left_widget->close();
+    right_widget->close();
 
     QWidget::closeEvent(event);
 }
@@ -717,6 +761,10 @@ bool GMainWindow::ConfirmChangeGame() {
         tr("Are you sure you want to stop the emulation? Any unsaved progress will be lost."),
         QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
     return answer != QMessageBox::No;
+}
+
+void GMainWindow::UpdateVolume() {
+    Settings::values.volume = (float)volume_slider->value() / volume_slider->maximum();
 }
 
 #ifdef main

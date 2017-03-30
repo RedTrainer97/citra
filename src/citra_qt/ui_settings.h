@@ -26,6 +26,7 @@ struct Values {
     bool microprofile_visible;
 
     bool single_window_mode;
+    bool show_3DS_controls;
     bool display_titlebar;
     bool show_status_bar;
 

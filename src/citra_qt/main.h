@@ -125,6 +125,8 @@ private slots:
     void OnDisplayTitleBars(bool);
     void ToggleWindowMode();
     void OnCreateGraphicsSurfaceViewer();
+    void Toggle3dsControls();
+    void UpdateVolume();
 
 private:
     void UpdateStatusBar();
@@ -133,6 +135,9 @@ private:
 
     GRenderWindow* render_window;
     GameList* game_list;
+    QWidget* left_widget;
+    QWidget* central_widget;
+    QWidget* right_widget;
 
     // Status bar elements
     QLabel* emu_speed_label = nullptr;
@@ -160,6 +165,8 @@ private:
     WaitTreeWidget* waitTreeWidget;
 
     QAction* actions_recent_files[max_recent_files_item];
+
+    QSlider* volume_slider;
 
 protected:
     void dropEvent(QDropEvent* event) override;
